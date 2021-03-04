@@ -25,6 +25,12 @@ PROBABLY_SPLIT_IF_LARGER_THAN = MAX_MESSAGE_LENGTH - 400
 class SourceRconError(Exception):
 	pass
 
+def main(argv):
+	rcon = SourceRcon(str(argv[0]), int(argv[1]), str(argv[2]))
+	rcon.connect()
+	print( rcon.rcon( str(argv[1] ))
+	rcon.disconnect()
+
 class SourceRcon(object):
 	"""Example usage:
 	import srcds
@@ -223,7 +229,5 @@ class SourceRcon(object):
 			self.send(SERVERDATA_EXECCOMMAND, command)
 			return self.receive()
 
-rcon = SourceRcon('localhost', 32330, '61Gm9q3M')
-rcon.connect()
-print( rcon.rcon('listplayers') )
-# print( rcon.rcon('ulx adduser will4im superadmin') )
+if __name__ == "__main__":
+	main(sys.argv)
