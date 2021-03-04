@@ -2,14 +2,14 @@ import socket, struct, sys, time, json
 
 def main(addr='localhost', port=27015):
 	try:
-		query = SourceQuery(addr, port)
+		query = SourceQuery( str(argv[0]), int(argv[1]) )
 		data = {
 			'info':query.get_info(),
 			'players':query.get_players(),
 			'rules':query.get_rules(),
 		}
 		query.disconnect()
-		json.dump(data, open("/opt/server/query.json", "w"), sort_keys = False)
+		json.dump(data, open("query.json", "w"), sort_keys = False)
 		if data['info'] == False:
 			exit(1)
 	except Exception as ex:
@@ -291,4 +291,4 @@ class SourceQuery(object):
 		return s, data[i + 1:]
 
 if __name__ == '__main__':
-	main( socket.gethostname(), int(sys.argv[1]) )
+	main( sys.argv )
