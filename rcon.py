@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import socket, sys
+import socket, sys, time
 
 import select
 import socket
@@ -26,10 +26,11 @@ class SourceRconError(Exception):
 	pass
 
 def main(argv):
-	rcon = SourceRcon(str(argv[0]), int(argv[1]), str(argv[2]))
+	rcon = SourceRcon( str(argv[1]), int(argv[2]), str(argv[3]) )
 	rcon.connect()
-	print( rcon.rcon( str(argv[1] ))
+	resp = rcon.rcon( str(argv[4]) )
 	rcon.disconnect()
+	return resp
 
 class SourceRcon(object):
 	"""Example usage:
@@ -37,6 +38,8 @@ class SourceRcon(object):
 	server = srcds.SourceRcon('127.0.0.1', 27015, 'gerbouille')
 	print(server.rcon('cvarlist'))
 	"""
+	login_max_retry = 10
+
 	def __init__(self, host, port=27015, password='', timeout=5.0):
 		self.host = host
 		self.port = port
@@ -44,7 +47,7 @@ class SourceRcon(object):
 		self.timeout = timeout
 		self.tcp = None
 		self.reqid = 0
-
+	
 	def disconnect(self):
 		"""Disconnect from the server."""
 		if self.tcp:
@@ -172,14 +175,14 @@ class SourceRcon(object):
 		self.send(SERVERDATA_AUTH, self.password)
 		auth = b''
 		retry = 0
-		while auth == b'' and retry < 10:
+		# wait for response
+		while auth == b'' and retry < SourceRcon.login_max_retry:
 			retry = retry + 1
 			auth = self.receive()
-			print('a', retry)
 
 		if not auth:
 			self.disconnect()
-			raise SourceRconError('RCON authentication failure: %s' % (repr(auth),))
+			raise SourceRconError('RCON authentication failure: {}'.format( repr(auth) ))
 		else:
 			return True
 
@@ -203,31 +206,19 @@ class SourceRcon(object):
 				while data == b'' and retry < 10:
 					retry = retry + 1
 					data = self.receive()
-					print('r', retry)
-				print(-1)
 				data = data.decode('utf-8')
 				data = data.split('\n')
 			self.disconnect()
 			return data
-		except Exception as e:
-			print(e)
-			# timeout? invalid? we don't care. try one more time.
+		except Exception:
 			self.disconnect()
 			self.connect()
-			self.send(SERVERDATA_AUTH, self.password)
-
-			auth = self.receive()
-			# the first packet may be a "you have been banned" or empty string.
-			# in the latter case, fetch the second packet
-			if auth == b'':
-				auth = self.receive()
-
-			if auth is not True:
+			if self.auth():
+				self.send(SERVERDATA_EXECCOMMAND, command)
+				return self.receive()
+			else:
 				self.disconnect()
-				raise SourceRconError('RCON authentication failure: %s' % (repr(auth),))
-
-			self.send(SERVERDATA_EXECCOMMAND, command)
-			return self.receive()
+				raise SourceRconError('RCON authentication failure')
 
 if __name__ == "__main__":
-	main(sys.argv)
+	print( main(sys.argv) )
