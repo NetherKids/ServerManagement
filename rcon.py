@@ -188,11 +188,11 @@ class SourceRcon(object):
 
 	def rcon(self, command):
 		if '\n' in command:
+			values = []
 			commands = command.split('\n')
-			def f(x): y = x.strip(); return len(y) and not y.startswith("//")
-			commands = filter(f, commands)
-			results = map(self.rcon, commands)
-			return "".join(results)
+			for command in commands:
+				values.append( self.rcon(command) )
+			return values
 
 		# send a single command. connect and auth if necessary.
 		try:
@@ -208,9 +208,14 @@ class SourceRcon(object):
 					data = self.receive()
 				data = data.decode('utf-8')
 				data = data.split('\n')
+				for i in range(len(data)):
+					data[i] = data[i][:-1]
+					if len(data[i]) == 0:
+						del data[i]
 			self.disconnect()
 			return data
-		except Exception:
+		except Exception as e:
+			print('Exception: {}'.format(e))
 			self.disconnect()
 			self.connect()
 			if self.auth():
