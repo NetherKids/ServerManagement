@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import socket, sys, time
+import socket, sys, time, logging
 
 import select
 import socket
@@ -226,4 +226,11 @@ class SourceRcon(object):
 				raise SourceRconError('RCON authentication failure')
 
 if __name__ == "__main__":
-	print( main(sys.argv) )
+
+	logging.basicConfig(filename='rcon.log', format="%(asctime)s|%(levelname)s:\t%(message)s", datefmt='%Y-%d-%m %H:%M:%S',  level=logging.DEBUG)
+	try:
+		logging.info( main(sys.argv) )
+	except SourceRconError as e:
+		logging.error( 'SourceRconError: {}'.format(e) )
+	except IndexError as e:
+		logging.error( 'IndexError: {}'.format(e) )
